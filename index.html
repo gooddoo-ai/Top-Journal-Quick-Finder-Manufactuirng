@@ -176,13 +176,26 @@ line-height: 1.4;
 }
 .hero-input::placeholder { color: #a0b3cf; font-size: .88rem; }
 
-/* Divider before button */
-.search-divider {
-width: 1px; height: 28px;
-background: #b0bcda; flex-shrink: 0;
-transition: background .25s;
+/* Button row below search bar */
+.btn-row {
+display: flex;
+gap: .6rem;
+margin-top: .75rem;
+margin-bottom: 1rem;
 }
-.search-box:focus-within .search-divider { background: rgba(196,127,8,.4); }
+.btn-row .hero-btn {
+margin: 0;
+flex: 1;
+justify-content: center;
+padding: .82rem 1.4rem;
+font-size: .78rem;
+}
+@media (min-width: 640px) {
+.btn-row .hero-btn { flex: 0 0 auto; }
+}
+
+/* Divider — no longer used inside search-box, kept for safety */
+.search-divider { display: none; }
 
 /* Clear button */
 .search-clear {
@@ -448,7 +461,7 @@ display: flex; align-items: center; justify-content: center; gap: .6rem;
 main, .hinner { padding-left: 1rem; padding-right: 1rem; }
 .hdate { display: none; }
 .hero { padding: 1.8rem 1.3rem 1.6rem; }
-.hero-btn { padding: .72rem 1.1rem; }
+.btn-row { flex-direction: row; }
 .hint-row { display: none; }
 }
 </style>
@@ -499,26 +512,24 @@ main, .hinner { padding-left: 1rem; padding-right: 1rem; }
       <button class="search-clear" id="clearBtn" onclick="clearInput()" title="지우기" aria-label="입력 지우기">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
-
-      <div class="search-divider"></div>
-
-      <!-- Search button -->
-      <button class="hero-btn" id="searchBtn" onclick="doSearch()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        SEARCH
-      </button>
-
-      <!-- Refresh button -->
-      <button class="hero-btn hero-btn-refresh" id="refreshBtn" onclick="doSearch()" title="새로고침">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <polyline points="23 4 23 10 17 10"/>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-        </svg>
-        REFRESH
-      </button>
     </div>
+  </div>
+
+  <!-- Button row below search bar -->
+  <div class="btn-row">
+    <button class="hero-btn" id="searchBtn" onclick="doSearch()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      SEARCH
+    </button>
+    <button class="hero-btn hero-btn-refresh" id="refreshBtn" onclick="doSearch()" title="새로고침">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <polyline points="23 4 23 10 17 10"/>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+      </svg>
+      REFRESH
+    </button>
   </div>
 
   <!-- Quick chips -->
