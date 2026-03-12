@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Top Journal Quick Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #f4f6fb;
+  --surf:  #ffffff;
+  --surf2: #eef1f9;
+  --bdr:   #dde3f0;
+  --bdr2:  #b0bcda;
+  --gold:  #c47f08;
+  --gold2: #e09a14;
+  --gold-light: #fef3d0;
+  --teal:  #0882a3;
+  --red:   #dc2626;
+  --txt:   #0f172a;
+  --sub:   #334155;
+  --muted: #7e95b8;
+  --card:  #ffffff;
+  --shadow-sm: 0 1px 4px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.05);
+  --shadow-md: 0 4px 20px rgba(15,23,42,.10), 0 1px 4px rgba(15,23,42,.06);
+  --shadow-lg: 0 14px 44px rgba(15,23,42,.13), 0 4px 14px rgba(15,23,42,.07);
+}
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: 'DM Sans', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── HEADER ─── */
+header {
+position: sticky; top: 0; z-index: 200;
+background: rgba(247,248,252,.96);
+backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+border-bottom: 1px solid var(–bdr);
+}
+.hinner {
+max-width: 1260px; margin: 0 auto; padding: 0 1.6rem;
+height: 56px; display: flex; align-items: center; justify-content: space-between;
+}
+.logo { display: flex; align-items: center; gap: .9rem; }
+.logo-badge {
+font-family: ‘IBM Plex Mono’, monospace; font-size: .55rem; font-weight: 600;
+letter-spacing: .2em; background: var(–gold); color: #fff;
+padding: .2rem .55rem; border-radius: 4px; text-transform: uppercase;
+flex-shrink: 0; line-height: 1;
+}
+.logo-title {
+font-family: ‘DM Serif Display’, Georgia, serif; font-size: 1.1rem;
+color: var(–txt); letter-spacing: -.01em; line-height: 1;
+}
+.logo-title em { font-style: italic; color: var(–gold); }
+.hright { display: flex; align-items: center; gap: .85rem; }
+.hdate { font-family: ‘IBM Plex Mono’, monospace; font-size: .6rem; color: var(–muted); letter-spacing: .05em; }
+.live {
+width: 6px; height: 6px; border-radius: 50%;
+background: var(–muted); transition: background .3s; flex-shrink: 0;
+}
+.live.on { background: var(–teal); box-shadow: 0 0 7px var(–teal); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ─── MAIN ─── */
+main { max-width: 1260px; margin: 0 auto; padding: 2.4rem 1.6rem 5rem; }
+
+/* ─── HERO / SEARCH ─── */
+.hero {
+margin-bottom: 1.6rem;
+padding: 3rem 2.6rem 2.4rem;
+background: linear-gradient(160deg, #ffffff 0%, #f0f4ff 60%, #e8f4fb 100%);
+border: 1.5px solid #c9d5ef;
+border-radius: 22px;
+box-shadow: 0 2px 8px rgba(15,23,42,.06), 0 8px 32px rgba(15,23,42,.07);
+position: relative;
+overflow: hidden;
+}
+
+/* Decorative top line */
+.hero::before {
+content: ‘’;
+position: absolute; top: 0; left: 0; right: 0; height: 3px;
+background: linear-gradient(90deg, var(–gold) 0%, #f59e0b 40%, var(–teal) 100%);
+}
+
+/* Subtle dot grid background */
+.hero::after {
+content: ‘’;
+position: absolute; inset: 0; pointer-events: none; z-index: 0;
+background-image: radial-gradient(circle, #b8c8e8 1px, transparent 1px);
+background-size: 26px 26px;
+opacity: .3;
+mask-image: radial-gradient(ellipse 90% 70% at 50% 110%, transparent 0%, black 100%);
+-webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 110%, transparent 0%, black 100%);
+}
+
+.hero-inner { position: relative; z-index: 1; }
+
+.hero-eyebrow {
+display: flex; align-items: center; gap: .75rem;
+font-family: ‘IBM Plex Mono’, monospace; font-size: .58rem;
+letter-spacing: .2em; text-transform: uppercase; color: var(–gold);
+margin-bottom: 1.4rem;
+}
+.hero-eyebrow::before {
+content: ‘’; display: block; width: 20px; height: 2px;
+background: var(–gold); flex-shrink: 0;
+}
+.hero-eyebrow::after {
+content: ‘’; flex: 1; height: 1px;
+background: linear-gradient(to right, var(–bdr), transparent);
+}
+
+/* ── Fancy Search Input Wrapper ── */
+.search-wrap {
+position: relative;
+display: flex;
+align-items: center;
+margin-bottom: 1.2rem;
+}
+
+/* Glow ring — reliable box-shadow approach, no extra div needed */
+.search-ring { display: none; } /* unused, kept for HTML compatibility */
+
+.search-box {
+position: relative; z-index: 1;
+display: flex; align-items: center;
+width: 100%;
+background: #ffffff;
+border: 2px solid #8fa5cc;           /* clearly visible on white */
+border-radius: 14px;
+overflow: visible;                    /* allow box-shadow to show */
+transition: border-color .22s, box-shadow .22s;
+box-shadow: 0 2px 8px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.05);
+clip-path: none;                      /* ensure no clipping */
+}
+.search-box:focus-within {
+border-color: var(–gold);
+box-shadow:
+0 0 0 4px rgba(196,127,8,.15),
+0 4px 20px rgba(196,127,8,.18),
+0 1px 3px rgba(15,23,42,.08);
+}
+
+/* Magnifier icon area */
+.search-icon-area {
+display: flex; align-items: center; justify-content: center;
+width: 52px; flex-shrink: 0;
+color: #8fa5cc;
+transition: color .25s;
+}
+.search-box:focus-within .search-icon-area { color: var(–gold); }
+.search-icon-area svg { width: 18px; height: 18px; stroke-width: 2.2; }
+
+/* The actual input */
+.hero-input {
+flex: 1;
+background: transparent;
+border: none;
+padding: 1rem .4rem 1rem 0;
+font-size: .97rem;
+font-family: ‘DM Sans’, sans-serif;
+color: var(–txt);
+outline: none;
+min-width: 0;
+line-height: 1.4;
+}
+.hero-input::placeholder { color: #a0b3cf; font-size: .88rem; }
+
+/* Divider before button */
+.search-divider {
+width: 1px; height: 28px;
+background: #b0bcda; flex-shrink: 0;
+transition: background .25s;
+}
+.search-box:focus-within .search-divider { background: rgba(196,127,8,.4); }
+
+/* Clear button */
+.search-clear {
+display: none; align-items: center; justify-content: center;
+width: 36px; height: 36px; flex-shrink: 0;
+background: none; border: none; cursor: pointer;
+color: var(–muted); border-radius: 8px;
+transition: color .15s, background .15s;
+margin: 0 2px;
+}
+.search-clear:hover { color: var(–red); background: rgba(220,38,38,.06); }
+.search-clear svg { width: 14px; height: 14px; stroke-width: 2; }
+.search-clear.visible { display: flex; }
+
+/* Search button */
+.hero-btn {
+display: flex; align-items: center; gap: .5rem;
+background: linear-gradient(135deg, #d48a0a 0%, #c47408 100%);
+border: none; border-radius: 10px;
+color: #fff;
+padding: .8rem 1.6rem;
+margin: 6px;
+font-family: ‘IBM Plex Mono’, monospace;
+font-size: .74rem; font-weight: 600; letter-spacing: .08em;
+cursor: pointer; white-space: nowrap; flex-shrink: 0;
+transition: background .15s, transform .12s, box-shadow .15s;
+box-shadow: 0 2px 10px rgba(196,127,8,.4), inset 0 1px 0 rgba(255,255,255,.18);
+position: relative; overflow: hidden;
+}
+.hero-btn::after {
+content: ‘’;
+position: absolute; inset: 0;
+background: linear-gradient(to bottom, rgba(255,255,255,.15), transparent);
+pointer-events: none;
+}
+.hero-btn:hover:not(:disabled) {
+background: linear-gradient(135deg, #e09a14 0%, #d48a0a 100%);
+transform: translateY(-1px);
+box-shadow: 0 5px 18px rgba(196,127,8,.45), inset 0 1px 0 rgba(255,255,255,.18);
+}
+.hero-btn:active:not(:disabled) { transform: translateY(0); }
+.hero-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+.hero-btn svg { width: 13px; height: 13px; stroke-width: 2.5; flex-shrink: 0; }
+
+/* Chip hints below input */
+.hint-row {
+display: flex; align-items: center; flex-wrap: wrap;
+gap: .4rem .5rem; font-size: .69rem; color: var(–muted);
+}
+.hint-row .hint-lbl { letter-spacing: .02em; }
+.hint-chip {
+display: inline-flex; align-items: center; gap: .25rem;
+background: var(–gold-light); border: 1px solid rgba(212,146,10,.22);
+color: var(–gold); border-radius: 5px;
+padding: .18rem .55rem; font-family: ‘IBM Plex Mono’, monospace;
+font-size: .6rem; cursor: pointer;
+transition: background .15s, transform .12s;
+}
+.hint-chip:hover { background: rgba(212,146,10,.18); transform: translateY(-1px); }
+.hint-chip svg { width: 9px; height: 9px; opacity: .7; }
+
+/* ─── PROGRESS ─── */
+#prog { margin-bottom: 1.2rem; display: none; }
+.ptrack { height: 2px; background: var(–bdr); border-radius: 1px; overflow: hidden; }
+.pfill {
+height: 100%; width: 0%;
+background: linear-gradient(90deg, var(–gold), var(–teal));
+border-radius: 1px; transition: width .3s ease;
+}
+#pmsg {
+font-family: ‘IBM Plex Mono’, monospace; font-size: .59rem;
+color: var(–muted); margin-top: .45rem; letter-spacing: .04em;
+}
+
+/* ─── BRIEF ─── */
+#brief {
+background: #f0fafa;
+border: 1px solid #a5e1ec;
+border-left: 3px solid var(–teal);
+border-radius: 11px; padding: .9rem 1.3rem;
+margin-bottom: 1.3rem; display: none;
+}
+.brief-lbl {
+font-family: ‘IBM Plex Mono’, monospace; font-size: .55rem;
+letter-spacing: .14em; text-transform: uppercase;
+color: var(–teal); margin-bottom: .38rem;
+}
+#briefTxt { font-size: .81rem; line-height: 1.82; color: var(–sub); }
+#briefTxt strong { color: var(–txt); font-weight: 600; }
+
+/* ─── FILTER ─── */
+.fbar {
+display: none; flex-wrap: wrap; gap: .38rem;
+margin-bottom: 1.1rem; align-items: center;
+}
+.flbl {
+font-family: ‘IBM Plex Mono’, monospace; font-size: .55rem;
+letter-spacing: .14em; text-transform: uppercase; color: var(–muted);
+margin-right: .2rem;
+}
+.ftag {
+display: inline-flex; align-items: center; gap: .3rem;
+border: 1px solid var(–bdr2); background: var(–surf);
+border-radius: 6px; padding: .26rem .66rem;
+font-size: .65rem; color: var(–sub); cursor: pointer;
+white-space: nowrap; font-family: ‘DM Sans’, sans-serif;
+transition: all .14s; box-shadow: var(–shadow-sm);
+}
+.ftag:hover { border-color: var(–gold); color: var(–gold); background: var(–gold-light); }
+.ftag.on { border-color: var(–gold); color: var(–gold); background: var(–gold-light); font-weight: 600; }
+.flogo { width: 12px; height: 12px; border-radius: 2px; object-fit: contain; flex-shrink: 0; }
+
+/* ─── SECTION HEAD ─── */
+.sechead {
+display: none; align-items: center; justify-content: space-between;
+padding-bottom: .75rem; margin-bottom: 1rem; border-bottom: 1px solid var(–bdr);
+}
+.sectitle {
+font-family: ‘IBM Plex Mono’, monospace; font-size: .56rem;
+letter-spacing: .2em; text-transform: uppercase; color: var(–muted);
+}
+#pcount { font-family: ‘IBM Plex Mono’, monospace; font-size: .56rem; color: var(–gold); }
+
+/* ─── GRID ─── */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1.05rem; align-items: start; }
+
+/* ─── CARD ─── */
+.card {
+background: var(–card);
+border: 1px solid var(–bdr);
+border-radius: 12px; overflow: hidden;
+opacity: 0; animation: up .4s forwards;
+box-shadow: var(–shadow-sm);
+transition: border-color .2s, transform .2s, box-shadow .2s;
+}
+.card:hover {
+border-color: var(–bdr2);
+transform: translateY(-3px);
+box-shadow: var(–shadow-lg);
+}
+@keyframes up { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.card:nth-child(1){animation-delay:.04s}.card:nth-child(2){animation-delay:.08s}
+.card:nth-child(3){animation-delay:.12s}.card:nth-child(4){animation-delay:.16s}
+.card:nth-child(5){animation-delay:.20s}.card:nth-child(6){animation-delay:.24s}
+.card:nth-child(7){animation-delay:.28s}.card:nth-child(8){animation-delay:.32s}
+.card:nth-child(9){animation-delay:.36s}.card:nth-child(10){animation-delay:.40s}
+.cstripe { height: 3px; }
+.cbody { padding: 1.05rem 1.2rem 1.2rem; }
+.cmeta { display: flex; align-items: center; gap: .45rem; margin-bottom: .65rem; flex-wrap: wrap; }
+.jtag {
+display: inline-flex; align-items: center; gap: .3rem;
+padding: .2rem .55rem; border-radius: 5px;
+font-family: ‘IBM Plex Mono’, monospace; font-size: .58rem;
+font-weight: 600; letter-spacing: .02em;
+}
+.jlogo { width: 11px; height: 11px; border-radius: 2px; object-fit: contain; flex-shrink: 0; }
+.ytag { font-family: ‘IBM Plex Mono’, monospace; font-size: .56rem; color: var(–muted); margin-left: auto; }
+.ctitle {
+font-family: ‘DM Serif Display’, Georgia, serif; font-size: .95rem;
+line-height: 1.46; color: var(–txt); margin-bottom: .5rem;
+}
+.cauth {
+font-family: ‘IBM Plex Mono’, monospace; font-size: .6rem; color: var(–muted);
+margin-bottom: .65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.slbl {
+font-family: ‘IBM Plex Mono’, monospace; font-size: .52rem;
+letter-spacing: .1em; text-transform: uppercase; color: var(–teal);
+margin-bottom: .28rem;
+}
+.csum { font-size: .78rem; line-height: 1.82; color: var(–sub); margin-bottom: .85rem; white-space: pre-wrap; }
+.csum.pend { color: var(–muted); font-style: italic; }
+.csum.fail { color: var(–red); font-size: .72rem; }
+.cfoot {
+display: flex; align-items: center; justify-content: space-between;
+padding-top: .75rem; border-top: 1px solid var(–bdr); gap: .4rem;
+}
+.cdoi {
+font-family: ‘IBM Plex Mono’, monospace; font-size: .55rem; color: var(–muted);
+flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.clink {
+display: inline-flex; align-items: center; gap: .32rem;
+padding: .32rem .9rem; border-radius: 6px;
+font-family: ‘IBM Plex Mono’, monospace; font-size: .63rem;
+font-weight: 700; letter-spacing: .05em;
+color: #ffffff; text-decoration: none;
+background: linear-gradient(135deg, #1a6fd4 0%, #1558b0 100%);
+flex-shrink: 0; transition: background .14s, transform .13s, box-shadow .14s;
+box-shadow: 0 2px 8px rgba(21,88,176,.35), inset 0 1px 0 rgba(255,255,255,.15);
+border: none;
+}
+.clink:hover {
+background: linear-gradient(135deg, #2278e8 0%, #1a6fd4 100%);
+transform: translateY(-1px);
+box-shadow: 0 4px 14px rgba(21,88,176,.42), inset 0 1px 0 rgba(255,255,255,.15);
+}
+.clink svg { width: 9px; height: 9px; }
+
+/* ─── EMPTY ─── */
+.empty { grid-column: 1/-1; text-align: center; padding: 5rem 2rem; color: var(–muted); }
+.empty-ico { font-size: 2.6rem; display: block; margin-bottom: .9rem; }
+.empty h3 { font-family: ‘DM Serif Display’, Georgia, serif; font-size: 1.15rem; color: var(–sub); margin-bottom: .5rem; }
+.empty p { font-size: .75rem; line-height: 1.75; max-width: 400px; margin: 0 auto; }
+.empty code {
+font-family: ‘IBM Plex Mono’, monospace; font-size: .7rem; color: var(–gold);
+background: var(–gold-light); padding: .1rem .38rem; border-radius: 4px;
+}
+
+/* ─── SPINNER ─── */
+.sp {
+display: inline-block; width: 11px; height: 11px;
+border: 1.5px solid var(–bdr2); border-top-color: var(–gold);
+border-radius: 50%; animation: spin .6s linear infinite;
+vertical-align: middle; margin-right: .3rem;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* Refresh button — teal outlined variant */
+.hero-btn-refresh {
+background: linear-gradient(135deg, #0882a3 0%, #066d88 100%) !important;
+box-shadow: 0 2px 10px rgba(8,130,163,.35), inset 0 1px 0 rgba(255,255,255,.15) !important;
+margin-left: 2px;
+}
+.hero-btn-refresh:hover:not(:disabled) {
+background: linear-gradient(135deg, #0a9dc4 0%, #0882a3 100%) !important;
+box-shadow: 0 5px 18px rgba(8,130,163,.42), inset 0 1px 0 rgba(255,255,255,.15) !important;
+}
+
+/* ─── FOOTER ─── */
+footer {
+border-top: 1px solid var(–bdr);
+background: var(–surf);
+padding: 1.4rem 1.6rem;
+text-align: center;
+}
+.footer-inner {
+max-width: 1260px; margin: 0 auto;
+font-family: ‘IBM Plex Mono’, monospace;
+font-size: .6rem; color: var(–muted);
+letter-spacing: .06em;
+display: flex; align-items: center; justify-content: center; gap: .6rem;
+}
+.footer-inner .copy-sym { font-size: .75rem; color: var(–bdr2); }
+.footer-inner strong { color: var(–sub); font-weight: 600; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(–bg); }
+::-webkit-scrollbar-thumb { background: var(–bdr2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(–muted); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 640px) {
+.grid { grid-template-columns: 1fr; }
+main, .hinner { padding-left: 1rem; padding-right: 1rem; }
+.hdate { display: none; }
+.hero { padding: 1.8rem 1.3rem 1.6rem; }
+.hero-btn { padding: .72rem 1.1rem; }
+.hint-row { display: none; }
+}
+</style>
+
+</head>
+<body>
+
+<header>
+  <div class="hinner">
+    <div class="logo">
+      <span class="logo-badge">TQJF</span>
+      <span class="logo-title">Top Journal <em>Quick</em> Finder</span>
+    </div>
+    <div class="hright">
+      <span class="hdate" id="hdate"></span>
+      <span class="live" id="live"></span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── HERO ── -->
+
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-eyebrow">키워드 기반 저널 탐색</div>
+
+```
+  <!-- Fancy Search Bar -->
+  <div class="search-wrap">
+    <div class="search-ring"></div>
+    <div class="search-box">
+      <!-- Magnifier icon -->
+      <div class="search-icon-area" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+
+      <input
+        class="hero-input" id="kwInput" type="text" autocomplete="off"
+        placeholder="연구 키워드 입력  ·  예: perovskite solar cell, soft robot gripper…"
+        oninput="onInput(this)"
+        onkeydown="if(event.key==='Enter') doSearch()">
+
+      <!-- Clear -->
+      <button class="search-clear" id="clearBtn" onclick="clearInput()" title="지우기" aria-label="입력 지우기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <div class="search-divider"></div>
+
+      <!-- Search button -->
+      <button class="hero-btn" id="searchBtn" onclick="doSearch()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        SEARCH
+      </button>
+
+      <!-- Refresh button -->
+      <button class="hero-btn hero-btn-refresh" id="refreshBtn" onclick="doSearch()" title="새로고침">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        REFRESH
+      </button>
+    </div>
+  </div>
+
+  <!-- Quick chips -->
+  <div class="hint-row">
+    <span class="hint-lbl">추천 키워드:</span>
+    <button class="hint-chip" onclick="setKw('perovskite solar cell')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z"/></svg>
+      perovskite solar cell
+    </button>
+    <button class="hint-chip" onclick="setKw('soft robot gripper')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z"/></svg>
+      soft robot gripper
+    </button>
+    <button class="hint-chip" onclick="setKw('triboelectric nanogenerator')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z"/></svg>
+      triboelectric nanogenerator
+    </button>
+    <button class="hint-chip" onclick="setKw('large language model')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z"/></svg>
+      large language model
+    </button>
+  </div>
+
+</div><!-- /hero-inner -->
+```
+
+  </div><!-- /hero -->
+
+  <!-- PROGRESS -->
+
+  <div id="prog">
+    <div class="ptrack"><div class="pfill" id="pfill"></div></div>
+    <div id="pmsg">준비 중...</div>
+  </div>
+
+  <!-- BRIEF -->
+
+  <div id="brief">
+    <div class="brief-lbl">검색 결과 요약</div>
+    <div id="briefTxt"></div>
+  </div>
+
+  <!-- FILTER -->
+
+  <div class="fbar" id="fbar">
+    <span class="flbl">저널 필터</span>
+    <button class="ftag on" onclick="setFilter(this,'all')">전체</button>
+  </div>
+
+  <!-- SECTION HEAD -->
+
+  <div class="sechead" id="sechead">
+    <span class="sectitle">SEARCH RESULTS</span>
+    <span id="pcount"></span>
+  </div>
+
+  <!-- GRID -->
+
+  <div class="grid" id="grid">
+    <div class="empty">
+      <span class="empty-ico">🔬</span>
+      <h3>검색어를 입력해 주세요</h3>
+      <p>원하는 연구 키워드를 위에 입력하고 <code>SEARCH</code>를 누르면<br>상위 저널에서 관련 논문을 즉시 찾아드립니다.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="copy-sym">©</span>
+    <span><strong>정임두</strong> · Im Doo Jung</span>
+    <span>·</span>
+    <span id="fyear"></span>
+    <span>· All rights reserved</span>
+  </div>
+</footer>
+
+<script>
+const LOGOS = {
+  wiley:   'https://onlinelibrary.wiley.com/favicon.ico',
+  nature:  'https://www.nature.com/static/images/favicons/nature/apple-touch-icon-60x60.png',
+  science: 'https://www.science.org/favicon.ico',
+  acs:     'https://www.acsnano.org/favicon.ico',
+  ijem:    'https://iopscience.iop.org/favicon.ico',
+  elsevier:'https://www.sciencedirect.com/favicon.ico'
+};
+const JOURNALS = [
+  {id:'Advanced Materials',                       issn:'0935-9648', c:'#d97706', bg:'rgba(217,119,6,.1)',   logo:LOGOS.wiley},
+  {id:'Advanced Science',                         issn:'2198-3844', c:'#db2777', bg:'rgba(219,39,119,.1)',  logo:LOGOS.wiley},
+  {id:'Science Advances',                         issn:'2375-2548', c:'#16a34a', bg:'rgba(22,163,74,.1)',   logo:LOGOS.science},
+  {id:'Advanced Functional Materials',            issn:'1616-3028', c:'#7c3aed', bg:'rgba(124,58,237,.1)',  logo:LOGOS.wiley},
+  {id:'Science Robotics',                         issn:'2470-9476', c:'#0891b2', bg:'rgba(8,145,178,.1)',   logo:LOGOS.science},
+  {id:'Nature Machine Intelligence',              issn:'2522-5839', c:'#0369a1', bg:'rgba(3,105,161,.1)',   logo:LOGOS.nature},
+  {id:'Nature Electronics',                       issn:'2520-1131', c:'#6d28d9', bg:'rgba(109,40,217,.1)',  logo:LOGOS.nature},
+  {id:'Nature Communications',                    issn:'2041-1723', c:'#2563eb', bg:'rgba(37,99,235,.1)',   logo:LOGOS.nature},
+  {id:'Nature',                                   issn:'0028-0836', c:'#059669', bg:'rgba(5,150,105,.1)',   logo:LOGOS.nature},
+  {id:'Science',                                  issn:'0036-8075', c:'#dc2626', bg:'rgba(220,38,38,.1)',   logo:LOGOS.science},
+  {id:'Nano Letters',                             issn:'1530-6984', c:'#0077b6', bg:'rgba(0,119,182,.1)',   logo:LOGOS.acs},
+  {id:'ACS Nano',                                 issn:'1936-0851', c:'#e63946', bg:'rgba(230,57,70,.1)',   logo:LOGOS.acs},
+  {id:'Int. Journal of Extreme Manufacturing',    issn:'2631-7990', c:'#2d6a4f', bg:'rgba(45,106,79,.1)',   logo:LOGOS.ijem},
+  {id:'Journal of Manufacturing Systems',        issn:'0278-6125', c:'#6b4226', bg:'rgba(107,66,38,.1)',   logo:LOGOS.elsevier},
+  {id:'Small',                                    issn:'1613-6810', c:'#c77dff', bg:'rgba(199,125,255,.1)', logo:LOGOS.wiley},
+];
+const CR = 'https://api.crossref.org/journals', MAIL = 'mailto=tqjf@example.com';
+let papers = [], curFilter = 'all', busy = false;
+
+/* ── helpers ── */
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+function esc(s){
+  if(!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── input helpers ── */
+function onInput(el){
+  const btn = document.getElementById('clearBtn');
+  btn.classList.toggle('visible', el.value.length > 0);
+}
+function clearInput(){
+  const i = document.getElementById('kwInput');
+  i.value = '';
+  document.getElementById('clearBtn').classList.remove('visible');
+  i.focus();
+}
+function setKw(val){
+  const i = document.getElementById('kwInput');
+  i.value = val;
+  onInput(i);
+  i.focus();
+}
+
+/* ── search ── */
+async function doSearch(){
+  const kw = document.getElementById('kwInput').value.trim();
+  if(!kw){
+    const i = document.getElementById('kwInput');
+    i.style.borderColor = '#dc2626';
+    document.querySelector('.search-box').style.borderColor = '#dc2626';
+    i.focus();
+    setTimeout(() => { document.querySelector('.search-box').style.borderColor = ''; }, 1400);
+    return;
+  }
+  if(busy) return;
+  await load(kw);
+}
+
+async function load(kw){
+  busy = true;
+  const btn = document.getElementById('searchBtn');
+  const rbtn = document.getElementById('refreshBtn');
+  btn.disabled = true; rbtn.disabled = true;
+  btn.innerHTML = '<span class="sp"></span>검색 중...';
+  rbtn.innerHTML = '<span class="sp"></span>검색 중...';
+  document.getElementById('live').classList.add('on');
+  papers = [];
+  document.getElementById('brief').style.display = 'none';
+  document.getElementById('fbar').style.display = 'none';
+  document.getElementById('sechead').style.display = 'none';
+  showProg(true); setP(0, '저널 연결 중...');
+  renderGrid();
+
+  let done = 0;
+  await Promise.allSettled(JOURNALS.map(j =>
+    fetchOne(j, kw).then(p => {
+      papers.push(p);
+      done++;
+      setP(Math.round(done / JOURNALS.length * 50), `${done}/${JOURNALS.length} 저널 완료`);
+    })
+  ));
+
+  papers.sort((a,b) =>
+    JOURNALS.findIndex(j => j.id === a.journal.id) -
+    JOURNALS.findIndex(j => j.id === b.journal.id)
+  );
+  papers.forEach((p,i) => p._id = i);
+
+  buildFilters();
+  document.getElementById('fbar').style.display = 'flex';
+  document.getElementById('sechead').style.display = 'flex';
+  renderGrid();
+
+  const valid = papers.filter(p => p.title && p.abstract);
+  if(valid.length){
+    setP(55, `번역 중 0/${valid.length}...`);
+    await translateAll(valid);
+  }
+  buildBrief(kw);
+  setP(100, '완료');
+  setTimeout(() => showProg(false), 700);
+
+  btn.disabled = false;
+  rbtn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>SEARCH';
+  rbtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>REFRESH';
+  document.getElementById('live').classList.remove('on');
+  busy = false;
+}
+
+async function fetchOne(j, kw){
+  const qs = [kw, `${kw} materials device`, kw.split(' ').slice(0,2).join(' '), 'materials device sensor'];
+  for(const q of qs){
+    try{
+      const url = `${CR}/${j.issn}/works?query=${encodeURIComponent(q)}&filter=from-pub-date:2018-01-01,type:journal-article,has-abstract:1&sort=relevance&rows=100&select=DOI,title,author,published,abstract,URL&${MAIL}`;
+      const r = await fetch(url, {signal: AbortSignal.timeout(20000)});
+      if(!r.ok) continue;
+      const d = await r.json();
+      const items = (d?.message?.items || []).filter(it =>
+        it.title?.[0] && it.title[0].length > 20 && it.abstract && it.abstract.length > 80
+      );
+      if(!items.length) continue;
+      const pick = items[Math.floor(Math.random() * Math.min(items.length, 20))];
+      const authors = (pick.author || []).slice(0,4)
+        .map(a => `${a.family || ''} ${(a.given || '').charAt(0)}.`.trim()).join(', ')
+        + ((pick.author?.length || 0) > 4 ? ' et al.' : '');
+      const year   = pick.published?.['date-parts']?.[0]?.[0] || '';
+      const doi    = pick.DOI || '';
+      const link   = doi ? `https://doi.org/${doi}` : (pick.URL || '#');
+      const abstract = (pick.abstract || '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      return {journal:j, title:pick.title[0], authors, year, doi, link, abstract, summaryKo:null, _id:null};
+    } catch { continue; }
+  }
+  return {journal:j, title:null, error:'관련 논문 없음', _id:null};
+}
+
+/* ── translate ── */
+async function translateAll(valid){
+  for(let i = 0; i < valid.length; i++){
+    const p = valid[i];
+    setP(55 + Math.round(i / valid.length * 42), `번역 중 ${i+1}/${valid.length}...`);
+    p.summaryKo = await gTranslate(p.abstract);
+    patchCard(p);
+    if(i < valid.length - 1) await sleep(120);
+  }
+}
+async function gTranslate(t){
+  const ch = splitChunks(t, 4800), res = [];
+  for(let i = 0; i < ch.length; i++){
+    res.push(await gtChunk(ch[i]));
+    if(i < ch.length - 1) await sleep(80);
+  }
+  return res.join(' ').trim();
+}
+async function gtChunk(text){
+  try{
+    const r = await fetch(
+      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q=${encodeURIComponent(text)}`,
+      {signal: AbortSignal.timeout(12000)}
+    );
+    if(!r.ok) throw 0;
+    const d = await r.json();
+    const t = (d[0] || []).map(s => s[0] || '').join('');
+    if(t && t.length > 3) return t;
+    throw 0;
+  } catch { return text; }
+}
+function splitChunks(text, max){
+  const s = text.match(/[^.!?]+[.!?]+\s*/g) || [text];
+  const ch = []; let cur = '';
+  for(const x of s){
+    if(cur.length + x.length > max && cur){ ch.push(cur.trim()); cur = x; }
+    else cur += x;
+  }
+  if(cur.trim()) ch.push(cur.trim());
+  const res = [];
+  for(const c of ch){
+    if(c.length <= max){ res.push(c); continue; }
+    for(let i = 0; i < c.length; i += max) res.push(c.slice(i, i + max));
+  }
+  return res;
+}
+
+/* ── brief ── */
+function buildBrief(kw){
+  const valid = papers.filter(p => p.title);
+  if(!valid.length) return;
+  const years = [...new Set(valid.map(p => p.year).filter(Boolean))].sort();
+  const stop = new Set(['which','these','their','using','based','have','been','this','that','with','from','into','other','show','more','such','high','than','were','also','both','paper','study','results','method']);
+  const freq = {};
+  valid.map(p => p.title).join(' ').toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/)
+    .filter(w => w.length > 4 && !stop.has(w)).forEach(w => { freq[w] = (freq[w] || 0) + 1; });
+  const kws = Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0,6).map(([w]) => w);
+  document.getElementById('briefTxt').innerHTML =
+    `키워드 <strong>"${esc(kw)}"</strong>로 <strong>${JOURNALS.length}개</strong> 저널 검색 → <strong>${valid.length}편</strong> 수집 완료.`
+    + (years.length ? ` 출판 연도: <strong>${years[0]}–${years[years.length-1]}</strong>.` : '')
+    + (kws.length   ? ` 주요 키워드: <strong>${kws.join(', ')}</strong>.` : '');
+  document.getElementById('brief').style.display = 'block';
+}
+
+/* ── render ── */
+function renderGrid(){
+  const g = document.getElementById('grid');
+  const shown = curFilter === 'all' ? papers : papers.filter(p => p.journal.id === curFilter);
+  document.getElementById('pcount').textContent = papers.length
+    ? `${shown.filter(p => p.title).length} 논문` : '';
+  if(!papers.length){
+    g.innerHTML = `<div class="empty"><span class="empty-ico">⏳</span><h3>검색 중...</h3><p>저널에서 논문을 가져오는 중입니다.</p></div>`;
+    return;
+  }
+  const html = shown.filter(p => p.title).map((p,i) => cardHTML(p,i)).join('');
+  g.innerHTML = html || `<div class="empty"><span class="empty-ico">🔍</span><h3>결과 없음</h3><p>해당 저널에서 논문을 찾지 못했습니다.</p></div>`;
+}
+
+function cardHTML(p, i){
+  const j = p.journal;
+  const doi = p.doi ? (p.doi.length > 42 ? p.doi.slice(0,42)+'…' : p.doi) : '';
+  const sum = p.summaryKo
+    ? `<div class="slbl">한국어 번역</div><div class="csum">${esc(p.summaryKo)}</div>`
+    : `<div class="csum pend" id="s${p._id}"><span class="sp"></span>번역 중...</div>`;
+  return `<div class="card" style="animation-delay:${i*.05}s">
+<div class="cstripe" style="background:linear-gradient(90deg,${j.c},${j.c}88)"></div>
+<div class="cbody">
+  <div class="cmeta">
+    <span class="jtag" style="background:${j.bg};color:${j.c};border:1px solid ${j.c}44">
+      <img class="jlogo" src="${j.logo}" onerror="this.style.display='none'" loading="lazy">${esc(j.id)}
+    </span>
+    ${p.year ? `<span class="ytag">${p.year}</span>` : ''}
+  </div>
+  <div class="ctitle">${esc(p.title)}</div>
+  ${p.authors ? `<div class="cauth">${esc(p.authors)}</div>` : ''}
+  ${sum}
+  <div class="cfoot">
+    <div class="cdoi" title="${esc(p.doi)}">${doi}</div>
+    <a href="${esc(p.link)}" target="_blank" rel="noopener" class="clink">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+        <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+      </svg>원문
+    </a>
+  </div>
+</div></div>`;
+}
+
+function patchCard(p){
+  const el = document.getElementById(`s${p._id}`);
+  if(el) el.outerHTML = `<div class="slbl">한국어 번역</div><div class="csum">${esc(p.summaryKo)}</div>`;
+}
+
+function buildFilters(){
+  const bar = document.getElementById('fbar');
+  [...bar.querySelectorAll('.ftag')].slice(1).forEach(b => b.remove());
+  JOURNALS.forEach(j => {
+    const btn = document.createElement('button');
+    btn.className = 'ftag';
+    btn.innerHTML = `<img class="flogo" src="${j.logo}" onerror="this.style.display='none'" loading="lazy">${j.id}`;
+    btn.onclick = function(){ setFilter(this, j.id); };
+    bar.appendChild(btn);
+  });
+}
+function setFilter(btn, f){
+  document.querySelectorAll('.ftag').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  curFilter = f;
+  renderGrid();
+}
+
+function showProg(v){ document.getElementById('prog').style.display = v ? 'block' : 'none'; }
+function setP(pct, msg){
+  document.getElementById('pfill').style.width = pct + '%';
+  document.getElementById('pmsg').textContent = msg;
+}
+
+/* ── date ── */
+(function(){
+  const d = new Date();
+  document.getElementById('hdate').textContent =
+    d.toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric', weekday:'short'});
+  const fy = document.getElementById('fyear');
+  if(fy) fy.textContent = d.getFullYear();
+})();
+</script>
+
+</body>
+</html>
