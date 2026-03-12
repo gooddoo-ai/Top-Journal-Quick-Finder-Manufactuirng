@@ -352,6 +352,15 @@ margin-bottom: .65rem; white-space: nowrap; overflow: hidden; text-overflow: ell
 font-family: ‘IBM Plex Mono’, monospace; font-size: .52rem;
 letter-spacing: .1em; text-transform: uppercase; color: var(–teal);
 margin-bottom: .28rem;
+display: flex; align-items: center; gap: .4rem;
+}
+.abs-src-badge {
+display: inline-block;
+font-family: ‘IBM Plex Mono’, monospace; font-size: .48rem;
+font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+color: #7c5c00; background: #fff4d0; border: 1px solid #e8c94a;
+border-radius: 4px; padding: .1rem .4rem; vertical-align: middle;
+white-space: nowrap;
 }
 .csum { font-size: .78rem; line-height: 1.82; color: var(–sub); margin-bottom: .85rem; white-space: pre-wrap; }
 .csum.pend { color: var(–muted); font-style: italic; }
@@ -692,6 +701,14 @@ async function load(kw){
   document.getElementById('sechead').style.display = 'flex';
   renderGrid();
 
+  // Fallback: fetch missing abstracts from Semantic Scholar / OpenAlex
+  const noAbsPapers = papers.filter(p => p.title && !p.abstract && p.doi);
+  if(noAbsPapers.length){
+    setP(50, `초록 보완 중 (${noAbsPapers.length}건)...`);
+    await enrichAbstracts(papers);
+    renderGrid(); // re-render so patched cards show spinner
+  }
+
   const valid = papers.filter(p => p.title && p.abstract);
   if(valid.length){
     setP(55, `번역 중 0/${valid.length}...`);
@@ -710,15 +727,13 @@ async function load(kw){
 }
 
 async function fetchOne(j, kw){
-  // Strategy 1: query with abstract filter (strict)
-  // Strategy 2: query without abstract filter, accept any article with title
   const baseFilter = 'from-pub-date:2018-01-01,type:journal-article';
   const queries = [
-    {q: kw,                                      filter: baseFilter + ',has-abstract:1'},
-    {q: kw,                                      filter: baseFilter},
-    {q: kw.split(' ').slice(0,3).join(' '),      filter: baseFilter + ',has-abstract:1'},
-    {q: kw.split(' ').slice(0,3).join(' '),      filter: baseFilter},
-    {q: kw.split(' ').slice(0,2).join(' '),      filter: baseFilter},
+    {q: kw,                                 filter: baseFilter + ',has-abstract:1'},
+    {q: kw,                                 filter: baseFilter},
+    {q: kw.split(' ').slice(0,3).join(' '), filter: baseFilter + ',has-abstract:1'},
+    {q: kw.split(' ').slice(0,3).join(' '), filter: baseFilter},
+    {q: kw.split(' ').slice(0,2).join(' '), filter: baseFilter},
   ];
   for(const {q, filter} of queries){
     try{
@@ -726,11 +741,8 @@ async function fetchOne(j, kw){
       const r = await fetch(url, {signal: AbortSignal.timeout(22000)});
       if(!r.ok) continue;
       const d = await r.json();
-      const items = (d?.message?.items || []).filter(it =>
-        it.title?.[0] && it.title[0].length > 15
-      );
+      const items = (d?.message?.items || []).filter(it => it.title?.[0] && it.title[0].length > 15);
       if(!items.length) continue;
-      // prefer items with abstracts, fall back to any
       const withAbs = items.filter(it => it.abstract && it.abstract.length > 60);
       const pool = withAbs.length ? withAbs : items;
       const pick = pool[Math.floor(Math.random() * Math.min(pool.length, 20))];
@@ -740,13 +752,71 @@ async function fetchOne(j, kw){
       const year     = pick.published?.['date-parts']?.[0]?.[0] || '';
       const doi      = pick.DOI || '';
       const link     = doi ? `https://doi.org/${doi}` : (pick.URL || '#');
-      const abstract = pick.abstract
-        ? pick.abstract.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim()
-        : null;
-      return {journal:j, title:pick.title[0], authors, year, doi, link, abstract, summaryKo:null, _id:null};
+      const abstract = pick.abstract ? pick.abstract.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim() : null;
+      return {journal:j, title:pick.title[0], authors, year, doi, link, abstract, absSrc: abstract ? 'crossref' : null, summaryKo:null, _id:null};
     } catch { continue; }
   }
   return {journal:j, title:null, error:'관련 논문 없음', _id:null};
+}
+
+/* ── Abstract fallback: Semantic Scholar → OpenAlex ── */
+async function enrichAbstracts(paperList){
+  const noAbs = paperList.filter(p => p.title && !p.abstract && p.doi);
+  if(!noAbs.length) return;
+  for(let i = 0; i < noAbs.length; i++){
+    const p = noAbs[i];
+    setP(50 + Math.round(i / noAbs.length * 5), `초록 보완 중 ${i+1}/${noAbs.length}...`);
+    const result = await fetchAbstractFallback(p.doi);
+    if(result){
+      p.abstract = result.abstract;
+      p.absSrc   = result.src;
+      patchCardAbsPending(p);
+    }
+    if(i < noAbs.length - 1) await sleep(200);
+  }
+}
+
+async function fetchAbstractFallback(doi){
+  // 1) Semantic Scholar
+  try{
+    const r = await fetch(
+      `https://api.semanticscholar.org/graph/v1/paper/DOI:${encodeURIComponent(doi)}?fields=abstract`,
+      {signal: AbortSignal.timeout(10000)}
+    );
+    if(r.ok){
+      const d = await r.json();
+      if(d?.abstract && d.abstract.length > 60)
+        return {abstract: d.abstract.trim(), src: 'Semantic Scholar'};
+    }
+  } catch {}
+  await sleep(100);
+  // 2) OpenAlex
+  try{
+    const r = await fetch(
+      `https://api.openalex.org/works/https://doi.org/${encodeURIComponent(doi)}`,
+      {signal: AbortSignal.timeout(10000)}
+    );
+    if(r.ok){
+      const d = await r.json();
+      const inv = d?.abstract_inverted_index;
+      if(inv){
+        const abs = reconstructAbstract(inv);
+        if(abs && abs.length > 60)
+          return {abstract: abs, src: 'OpenAlex'};
+      }
+    }
+  } catch {}
+  return null;
+}
+
+/* Reconstruct abstract from OpenAlex inverted index format */
+function reconstructAbstract(inv){
+  try{
+    const arr = [];
+    for(const [word, positions] of Object.entries(inv))
+      for(const pos of positions) arr[pos] = word;
+    return arr.filter(Boolean).join(' ').trim();
+  } catch { return null; }
 }
 
 /* ── translate ── */
@@ -830,11 +900,13 @@ function renderGrid(){
 function cardHTML(p, i){
   const j = p.journal;
   const doi = p.doi ? (p.doi.length > 42 ? p.doi.slice(0,42)+'…' : p.doi) : '';
+  const srcBadge = p.absSrc && p.absSrc !== 'crossref'
+    ? `<span class="abs-src-badge">${esc(p.absSrc)}</span>` : '';
   const sum = p.summaryKo
-    ? `<div class="slbl">한국어 번역</div><div class="csum">${esc(p.summaryKo)}</div>`
+    ? `<div class="slbl">한국어 번역 ${srcBadge}</div><div class="csum">${esc(p.summaryKo)}</div>`
     : p.abstract
       ? `<div class="csum pend" id="s${p._id}"><span class="sp"></span>번역 중...</div>`
-      : `<div class="csum pend">초록 정보 없음 (CrossRef 미제공)</div>`;
+      : `<div class="csum pend" id="s${p._id}">초록을 불러오는 중...</div>`;
   return `<div class="card" style="animation-delay:${i*.05}s">
 <div class="cstripe" style="background:linear-gradient(90deg,${j.c},${j.c}88)"></div>
 <div class="cbody">
@@ -861,7 +933,15 @@ function cardHTML(p, i){
 
 function patchCard(p){
   const el = document.getElementById(`s${p._id}`);
-  if(el) el.outerHTML = `<div class="slbl">한국어 번역</div><div class="csum">${esc(p.summaryKo)}</div>`;
+  if(!el) return;
+  const srcBadge = p.absSrc && p.absSrc !== 'crossref'
+    ? `<span class="abs-src-badge">${esc(p.absSrc)}</span>` : '';
+  el.outerHTML = `<div class="slbl">한국어 번역 ${srcBadge}</div><div class="csum">${esc(p.summaryKo)}</div>`;
+}
+/* Called after enrichAbstracts finds an abstract — update placeholder text */
+function patchCardAbsPending(p){
+  const el = document.getElementById(`s${p._id}`);
+  if(el) el.innerHTML = `<span class="sp"></span>번역 중...`;
 }
 
 function buildFilters(){
