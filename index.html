@@ -581,7 +581,7 @@ main, .hinner { padding-left: 1rem; padding-right: 1rem; }
 <footer>
   <div class="footer-inner">
     <span class="copy-sym">©</span>
-    <span><strong>정임두</strong> · Im Doo Jung</span>
+    <span><strong>Im Doo Jung</strong></span>
     <span>·</span>
     <span id="fyear"></span>
     <span>· All rights reserved</span>
@@ -710,25 +710,39 @@ async function load(kw){
 }
 
 async function fetchOne(j, kw){
-  const qs = [kw, `${kw} materials device`, kw.split(' ').slice(0,2).join(' '), 'materials device sensor'];
-  for(const q of qs){
+  // Strategy 1: query with abstract filter (strict)
+  // Strategy 2: query without abstract filter, accept any article with title
+  const baseFilter = 'from-pub-date:2018-01-01,type:journal-article';
+  const queries = [
+    {q: kw,                                      filter: baseFilter + ',has-abstract:1'},
+    {q: kw,                                      filter: baseFilter},
+    {q: kw.split(' ').slice(0,3).join(' '),      filter: baseFilter + ',has-abstract:1'},
+    {q: kw.split(' ').slice(0,3).join(' '),      filter: baseFilter},
+    {q: kw.split(' ').slice(0,2).join(' '),      filter: baseFilter},
+  ];
+  for(const {q, filter} of queries){
     try{
-      const url = `${CR}/${j.issn}/works?query=${encodeURIComponent(q)}&filter=from-pub-date:2018-01-01,type:journal-article,has-abstract:1&sort=relevance&rows=100&select=DOI,title,author,published,abstract,URL&${MAIL}`;
-      const r = await fetch(url, {signal: AbortSignal.timeout(20000)});
+      const url = `${CR}/${j.issn}/works?query=${encodeURIComponent(q)}&filter=${filter}&sort=relevance&rows=100&select=DOI,title,author,published,abstract,URL&${MAIL}`;
+      const r = await fetch(url, {signal: AbortSignal.timeout(22000)});
       if(!r.ok) continue;
       const d = await r.json();
       const items = (d?.message?.items || []).filter(it =>
-        it.title?.[0] && it.title[0].length > 20 && it.abstract && it.abstract.length > 80
+        it.title?.[0] && it.title[0].length > 15
       );
       if(!items.length) continue;
-      const pick = items[Math.floor(Math.random() * Math.min(items.length, 20))];
+      // prefer items with abstracts, fall back to any
+      const withAbs = items.filter(it => it.abstract && it.abstract.length > 60);
+      const pool = withAbs.length ? withAbs : items;
+      const pick = pool[Math.floor(Math.random() * Math.min(pool.length, 20))];
       const authors = (pick.author || []).slice(0,4)
         .map(a => `${a.family || ''} ${(a.given || '').charAt(0)}.`.trim()).join(', ')
         + ((pick.author?.length || 0) > 4 ? ' et al.' : '');
-      const year   = pick.published?.['date-parts']?.[0]?.[0] || '';
-      const doi    = pick.DOI || '';
-      const link   = doi ? `https://doi.org/${doi}` : (pick.URL || '#');
-      const abstract = (pick.abstract || '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      const year     = pick.published?.['date-parts']?.[0]?.[0] || '';
+      const doi      = pick.DOI || '';
+      const link     = doi ? `https://doi.org/${doi}` : (pick.URL || '#');
+      const abstract = pick.abstract
+        ? pick.abstract.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim()
+        : null;
       return {journal:j, title:pick.title[0], authors, year, doi, link, abstract, summaryKo:null, _id:null};
     } catch { continue; }
   }
@@ -818,7 +832,9 @@ function cardHTML(p, i){
   const doi = p.doi ? (p.doi.length > 42 ? p.doi.slice(0,42)+'…' : p.doi) : '';
   const sum = p.summaryKo
     ? `<div class="slbl">한국어 번역</div><div class="csum">${esc(p.summaryKo)}</div>`
-    : `<div class="csum pend" id="s${p._id}"><span class="sp"></span>번역 중...</div>`;
+    : p.abstract
+      ? `<div class="csum pend" id="s${p._id}"><span class="sp"></span>번역 중...</div>`
+      : `<div class="csum pend">초록 정보 없음 (CrossRef 미제공)</div>`;
   return `<div class="card" style="animation-delay:${i*.05}s">
 <div class="cstripe" style="background:linear-gradient(90deg,${j.c},${j.c}88)"></div>
 <div class="cbody">
